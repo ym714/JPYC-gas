@@ -240,8 +240,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Claimエリア */}
-          {isConnected && address && (
+          {/* Claimエリア - JPYC受け取り履歴がある場合のみ表示 */}
+          {isConnected && address && result && result.verified && (
             <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-lg border border-zinc-200 dark:border-zinc-800">
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
                 ガス代を受け取る
