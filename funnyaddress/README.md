@@ -98,3 +98,4 @@ func IsFunnyAddress(address string) bool {
 
 MIT License
 
+
