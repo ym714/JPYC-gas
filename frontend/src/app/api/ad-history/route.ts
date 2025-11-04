@@ -135,19 +135,26 @@ export async function POST(request: NextRequest) {
     // 転送履歴を整形（広告データも取得）
     const history = await Promise.all(
       transfers.map(async (transfer: any) => {
-      // Alchemy APIのtransfer.valueの形式を確認して適切に処理
-      // transfer.valueは16進数文字列（例: "0x5af3107a4000"）または数値で返される可能性がある
+      // Alchemy APIのERC20転送の場合、値はrawContract.valueに16進数文字列で含まれる
+      // またはtransfer.valueに含まれる場合もある
       let value: string;
       
-      if (transfer.value) {
-        // valueが16進数文字列の場合は10進数に変換（最小単位）
+      // まずrawContract.valueを確認（ERC20の場合、通常はこちら）
+      if (transfer.rawContract?.value) {
+        // rawContract.valueは16進数文字列（例: "0x56bc75e2d630e0000"）
+        const rawValue = transfer.rawContract.value;
+        if (typeof rawValue === "string" && rawValue.startsWith("0x")) {
+          value = BigInt(rawValue).toString();
+        } else {
+          value = rawValue.toString();
+        }
+      } else if (transfer.value) {
+        // transfer.valueが存在する場合（フォールバック）
         if (typeof transfer.value === "string" && transfer.value.startsWith("0x")) {
           value = BigInt(transfer.value).toString();
         } else if (typeof transfer.value === "number") {
-          // 数値の場合、そのまま使用（ただし、これは最小単位である可能性が高い）
           value = transfer.value.toString();
         } else {
-          // 文字列の場合
           value = transfer.value.toString();
         }
       } else {
@@ -159,6 +166,7 @@ export async function POST(request: NextRequest) {
           imageUrl?: string;
           altText?: string;
           hrefUrl?: string;
+          bidAmount?: bigint;
         } = {};
 
         try {
@@ -188,11 +196,18 @@ export async function POST(request: NextRequest) {
                 data: adBidPlacedLog.data,
                 topics: adBidPlacedLog.topics,
               });
+              // AdBidPlacedイベントからbidAmountを取得（これが最も正確な値）
+              const bidAmount = decoded.args.bidAmount as bigint;
               adData = {
                 imageUrl: decoded.args.imageUrl as string,
                 altText: decoded.args.altText as string,
                 hrefUrl: decoded.args.hrefUrl as string,
+                bidAmount: bidAmount,
               };
+              // bidAmountが取得できた場合、それを使用（より正確）
+              if (bidAmount !== undefined) {
+                value = bidAmount.toString();
+              }
             } catch (error) {
               console.error("Failed to decode AdBidPlaced event:", error);
             }

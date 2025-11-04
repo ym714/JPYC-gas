@@ -607,12 +607,27 @@ export default function ComPage() {
                           )}
                         </td>
                         <td className="p-3 text-sm text-right text-zinc-900 dark:text-zinc-50">
-                          {formatUnits(BigInt(item.value || "0"), tokenDecimals)}{" "}
+                          {(() => {
+                            try {
+                              // valueをBigIntに変換して、適切なdecimalsでフォーマット
+                              const valueBigInt = BigInt(item.value || "0");
+                              // tokenDecimalsが18以外の場合も考慮（JPYCは通常18）
+                              const decimals = item.tokenSymbol === "JPYC" ? 18 : tokenDecimals;
+                              const formatted = formatUnits(valueBigInt, decimals);
+                              // formatUnitsが返す文字列から、末尾の不要な0を削除
+                              // 例: "0.000000000000000100" -> "0.0000000000000001"
+                              // 例: "100.000000000000000000" -> "100"
+                              return formatted.replace(/\.?0+$/, "");
+                            } catch (error) {
+                              console.error("Error formatting value:", error, item.value);
+                              return item.value || "0";
+                            }
+                          })()}{" "}
                           {item.tokenSymbol || tokenSymbol}
                         </td>
                         <td className="p-3 text-right">
                           <a
-                            href={`https://amoy.polygonscan.com/tx/${item.transactionHash}`}
+                            href={`https://polygonscan.com/tx/${item.transactionHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
