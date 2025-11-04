@@ -47,7 +47,7 @@ export default function Home() {
   const [donationBalanceLoading, setDonationBalanceLoading] = useState(false);
 
   // 広告関連の状態
-  const [commercial, setCommercial] = useState<Commercial>(defaultCommercial);
+  const [commercial, setCommercial] = useState<Commercial | null>(null);
   const [adLoading, setAdLoading] = useState(false);
   const [minBidAmount, setMinBidAmount] = useState<string | null>(null);
   
@@ -99,16 +99,29 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // 広告データを取得
+  // 広告データを取得（APIキャッシュを利用）
   useEffect(() => {
     const fetchAd = async () => {
       setAdLoading(true);
       try {
-        const ad = await getCurrentAd();
-        if (ad) {
+        const res = await fetch("/api/current-ad", {
+          method: "GET",
+          // CDNキャッシュを活かしつつ、ブラウザキャッシュも使う
+          headers: { "Accept": "application/json" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const ad: Commercial = {
+            bidder: data.bidder,
+            bidAmount: data.bidAmount,
+            "image-url": data["image-url"] || defaultCommercial["image-url"],
+            "alt-text": data["alt-text"] || defaultCommercial["alt-text"],
+            "href-url": data["href-url"] || defaultCommercial["href-url"],
+            timestamp: data.timestamp,
+          };
           setCommercial(ad);
         } else {
-          // コントラクトから取得できない場合はデフォルトを使用
+          // APIが失敗した場合のみデフォルト
           setCommercial(defaultCommercial);
         }
 
@@ -118,7 +131,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Failed to fetch ad:", error);
-        setCommercial(defaultCommercial);
+        setCommercial((prev) => prev ?? defaultCommercial);
       } finally {
         setAdLoading(false);
       }
@@ -130,14 +143,25 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // 入札が成功したら広告を再取得
+  // 入札が成功したら広告を再取得（APIキャッシュ経由）
   useEffect(() => {
     if (isConfirmed) {
       const fetchAd = async () => {
-        const ad = await getCurrentAd();
-        if (ad) {
-          setCommercial(ad);
-        }
+        try {
+          const res = await fetch("/api/current-ad");
+          if (res.ok) {
+            const data = await res.json();
+            const ad: Commercial = {
+              bidder: data.bidder,
+              bidAmount: data.bidAmount,
+              "image-url": data["image-url"] || defaultCommercial["image-url"],
+              "alt-text": data["alt-text"] || defaultCommercial["alt-text"],
+              "href-url": data["href-url"] || defaultCommercial["href-url"],
+              timestamp: data.timestamp,
+            };
+            setCommercial(ad);
+          }
+        } catch {}
         const minBid = await getMinBidAmount();
         if (minBid !== null) {
           setMinBidAmount(minBid.formatted);
@@ -312,18 +336,25 @@ export default function Home() {
                 広告出稿希望の方はこちらへ
               </a>
             </div>
-            <a
-              href={commercial["href-url"]}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800"
-            >
-              <img
-                src={commercial["image-url"]}
-                alt={commercial["alt-text"]}
-                className="w-full h-auto max-h-96 object-contain"
-              />
-            </a>
+            {commercial ? (
+              <a
+                href={commercial["href-url"]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800"
+              >
+                <img
+                  src={commercial["image-url"]}
+                  alt={commercial["alt-text"]}
+                  className="w-full h-auto max-h-96 object-contain"
+                />
+              </a>
+            ) : (
+              // 初回はキャッシュからのAPI結果が来るまでプレースホルダで固定高を確保しチラつきを防止
+              <div className="block w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                <div className="w-full max-h-96 h-64 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
+              </div>
+            )}
           </div>
 
           {/* Claimエリア - JPYC受け取り履歴がある場合のみ表示 */}
