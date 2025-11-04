@@ -1,0 +1,31 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+script = "script"
+solc_version = "0.8.28"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+evm_version = "shanghai"
+
+[profile.ci]
+fuzz = { runs = 100 }
+invariant = { runs = 100 }
+
+[profile.optimized]
+optimizer = true
+optimizer_runs = 10000
+via_ir = true
+
+[etherscan]
+# 必要に応じてAPIキーを設定
+# base = "${BASE_ETHERSCAN_API_KEY}"
+# sepolia = "${SEPOLIA_ETHERSCAN_API_KEY}"
+
+[rpc_endpoints]
+# 必要に応じてRPCエンドポイントを設定
+# base = "${BASE_RPC_URL}"
+# sepolia = "${SEPOLIA_RPC_URL}"
+

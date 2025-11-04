@@ -1,0 +1,25 @@
+{
+  "name": "contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:foundry": "curl -L https://foundry.paradigm.xyz | bash && foundryup",
+    "build": "forge build",
+    "test": "forge test",
+    "test:verbose": "forge test -vvv",
+    "test:coverage": "forge coverage",
+    "deploy": "bun run script/DeployWithBun.ts",
+    "deploy:script": "forge script",
+    "format": "forge fmt",
+    "snapshot": "forge snapshot",
+    "verify": "forge verify-contract"
+  },
+  "devDependencies": {
+    "@types/node": "^20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
+

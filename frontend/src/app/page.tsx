@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Commercial, defaultCommercial } from "@/default";
+import { getCurrentAd, getMinBidAmount, preparePlaceBidTransaction } from "@/lib/adContract";
+import { parseEther, formatEther } from "viem";
 
 interface VerificationResult {
   verified: boolean;
@@ -43,6 +46,24 @@ export default function Home() {
   const [donationBalance, setDonationBalance] = useState<string | null>(null);
   const [donationBalanceLoading, setDonationBalanceLoading] = useState(false);
 
+  // 広告関連の状態
+  const [commercial, setCommercial] = useState<Commercial>(defaultCommercial);
+  const [adLoading, setAdLoading] = useState(false);
+  const [minBidAmount, setMinBidAmount] = useState<string | null>(null);
+  
+  // 入札関連の状態
+  const [bidImageUrl, setBidImageUrl] = useState("");
+  const [bidAltText, setBidAltText] = useState("");
+  const [bidHrefUrl, setBidHrefUrl] = useState("");
+  const [bidAmount, setBidAmount] = useState("");
+  const [showBidForm, setShowBidForm] = useState(false);
+
+  // wagmi hooks for contract interaction
+  const { writeContract, data: hash, isPending: isBidPending, error: bidError } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash,
+  });
+
   // 寄付アドレスのPOL残高を取得
   const DONATION_ADDRESS = "0xE7C3849f94FB6A733E372E991aa12Fee30607119";
   
@@ -77,6 +98,59 @@ export default function Home() {
     const interval = setInterval(fetchDonationBalance, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // 広告データを取得
+  useEffect(() => {
+    const fetchAd = async () => {
+      setAdLoading(true);
+      try {
+        const ad = await getCurrentAd();
+        if (ad) {
+          setCommercial(ad);
+        } else {
+          // コントラクトから取得できない場合はデフォルトを使用
+          setCommercial(defaultCommercial);
+        }
+
+        const minBid = await getMinBidAmount();
+        if (minBid !== null) {
+          setMinBidAmount(minBid.formatted);
+        }
+      } catch (error) {
+        console.error("Failed to fetch ad:", error);
+        setCommercial(defaultCommercial);
+      } finally {
+        setAdLoading(false);
+      }
+    };
+
+    fetchAd();
+    // 30秒ごとに更新
+    const interval = setInterval(fetchAd, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 入札が成功したら広告を再取得
+  useEffect(() => {
+    if (isConfirmed) {
+      const fetchAd = async () => {
+        const ad = await getCurrentAd();
+        if (ad) {
+          setCommercial(ad);
+        }
+        const minBid = await getMinBidAmount();
+        if (minBid !== null) {
+          setMinBidAmount(minBid.formatted);
+        }
+        setShowBidForm(false);
+        setBidImageUrl("");
+        setBidAltText("");
+        setBidHrefUrl("");
+        setBidAmount("");
+      };
+      fetchAd();
+    }
+  }, [isConfirmed]);
 
   // ウォレットが接続されたら自動的に検証
   useEffect(() => {
@@ -189,19 +263,6 @@ export default function Home() {
               JPYCしか受け取れずガス代が払えずロックされる問題があります。
               このサービスは、そんな方々に少しのガス代を送って、ロックを解消するためのものです。
             </p>
-            <p className="text-base leading-7 text-zinc-700 dark:text-zinc-300 max-w-2xl mx-auto mt-4">
-              もしガス代が入手できたら、一番有名なDEX{" "}
-              <a
-                href="https://app.uniswap.org/swap?chain=mainnet&inputCurrency=0xe7c3d8c9a439fede00d2600032d5db0be71c3c29&outputCurrency=0x455e53cbb86018ac2b8092fdcd39d8444affc3f6"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-              >
-                Uniswap
-              </a>
-              で、JPYCをガス代として使えるトークンにスワップすることをお勧めします。
-              <span className="font-semibold text-orange-600 dark:text-orange-400"> DYOR！</span>
-            </p>
           </div>
 
           {/* ウォレット接続エリア */}
@@ -238,6 +299,31 @@ export default function Home() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* 広告枠 */}
+          <div className="w-full space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">広告</p>
+              <a
+                href="/com"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+              >
+                広告出稿希望の方はこちらへ
+              </a>
+            </div>
+            <a
+              href={commercial["href-url"]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800"
+            >
+              <img
+                src={commercial["image-url"]}
+                alt={commercial["alt-text"]}
+                className="w-full h-auto max-h-96 object-contain"
+              />
+            </a>
           </div>
 
           {/* Claimエリア - JPYC受け取り履歴がある場合のみ表示 */}
