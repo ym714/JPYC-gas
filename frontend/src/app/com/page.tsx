@@ -220,8 +220,8 @@ export default function ComPage() {
     };
 
     fetchAd();
-    const interval = setInterval(fetchAd, 30000); // 30秒ごとに更新
-    return () => clearInterval(interval);
+    // 定期リフレッシュは不要
+    return () => {};
   }, []);
 
   // 履歴を取得
@@ -270,8 +270,8 @@ export default function ComPage() {
 
   useEffect(() => {
     fetchHistory();
-    const interval = setInterval(fetchHistory, 60000); // 1分ごとに更新
-    return () => clearInterval(interval);
+    // 定期リフレッシュは不要
+    return () => {};
   }, []);
 
   // 入札が成功したら広告を再取得
