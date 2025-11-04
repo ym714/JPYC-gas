@@ -94,9 +94,8 @@ export default function Home() {
     };
 
     fetchDonationBalance();
-    // 30秒ごとに更新
-    const interval = setInterval(fetchDonationBalance, 30000);
-    return () => clearInterval(interval);
+    // 定期リフレッシュは不要
+    return () => {};
   }, []);
 
   // 広告データを取得（APIキャッシュを利用）
@@ -138,9 +137,8 @@ export default function Home() {
     };
 
     fetchAd();
-    // 30秒ごとに更新
-    const interval = setInterval(fetchAd, 30000);
-    return () => clearInterval(interval);
+    // 定期リフレッシュは不要
+    return () => {};
   }, []);
 
   // 入札が成功したら広告を再取得（APIキャッシュ経由）
