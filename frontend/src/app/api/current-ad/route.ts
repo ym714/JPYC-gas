@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
 import { polygon } from "viem/chains";
+import { misstakeList } from "../ad-history/route";
 
 const ALCHEMY_ENDPOINT = process.env.ALCHEMY_ENDPOINT;
 const AD_AUCTION_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS as `0x${string}` | undefined;
@@ -50,7 +51,7 @@ export async function GET() {
     const data = {
       bidder,
       bidAmount: bidAmount.toString(),
-      "image-url": imageUrl,
+      "image-url": misstakeList.find((item) => item.miss === imageUrl)?.correct || imageUrl,
       "alt-text": altText,
       "href-url": hrefUrl,
       timestamp: Number(timestamp),

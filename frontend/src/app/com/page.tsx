@@ -484,6 +484,15 @@ export default function ComPage() {
 
               <div className="space-y-4">
                   <div>
+                    {bidImageUrl && (
+                      <div className="mb-2">
+                        <img
+                          src={bidImageUrl}
+                          alt="プレビュー"
+                          className="w-full h-auto max-h-64 object-contain rounded border border-zinc-200 dark:border-zinc-700"
+                        />
+                      </div>
+                    )}
                     <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                       画像URL
                     </label>

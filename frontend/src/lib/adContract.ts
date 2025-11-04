@@ -132,28 +132,45 @@ export async function getCurrentAd(): Promise<Commercial | null> {
   }
 
   try {
-    const [result, tokenInfo] = await Promise.all([
-      publicClient.readContract({
-        address: AD_AUCTION_CONTRACT_ADDRESS,
-        abi: AD_AUCTION_ABI,
-        functionName: "getCurrentAd",
-      }),
-      getTokenInfo(),
-    ]);
+    // トークン情報はフォーマットに必要
+    const tokenInfoPromise = getTokenInfo();
 
-    const [bidder, bidAmount, imageUrl, altText, hrefUrl, timestamp] = result;
-    const decimals = tokenInfo?.decimals || 18;
+    // サーバーAPIの履歴（最新が先頭）から現在広告相当を取得
+    const res = await fetch("/api/ad-history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contractAddress: AD_AUCTION_CONTRACT_ADDRESS }),
+    });
+    if (!res.ok) {
+      throw new Error(`ad-history api failed: ${res.status}`);
+    }
+    const data = await res.json();
+    const history = (data?.history || []) as Array<{
+      from: string;
+      value: string;
+      imageUrl?: string;
+      altText?: string;
+      hrefUrl?: string;
+      timestamp?: number | null;
+    }>;
+    if (!history.length) {
+      return null;
+    }
+    const latest = history[0];
+
+    const tokenInfo = await tokenInfoPromise;
+    const decimals = tokenInfo?.decimals ?? 18;
 
     return {
-      "alt-text": altText,
-      "image-url": imageUrl,
-      "href-url": hrefUrl,
-      bidder: bidder,
-      bidAmount: formatUnits(bidAmount, decimals),
-      timestamp: Number(timestamp),
+      bidder: latest.from,
+      bidAmount: formatUnits(BigInt(latest.value || "0"), decimals),
+      "image-url": latest.imageUrl || "",
+      "alt-text": latest.altText || "",
+      "href-url": latest.hrefUrl || "#",
+      timestamp: latest.timestamp ? Number(latest.timestamp) : 0,
     };
   } catch (error) {
-    console.error("Failed to fetch ad from contract:", error);
+    console.error("Failed to fetch ad from history:", error);
     return null;
   }
 }

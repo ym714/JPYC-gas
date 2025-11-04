@@ -3,12 +3,26 @@ import { createPublicClient, http, decodeEventLog } from "viem";
 import { polygon } from "viem/chains";
 
 const ALCHEMY_ENDPOINT = process.env.ALCHEMY_ENDPOINT;
-const COMMERCIAL_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS;
+const COMMERCIAL_CONTRACT_ADDRESS =
+  process.env.NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS;
 
 interface AdHistoryRequest {
   contractAddress?: string;
   erc20TokenAddress?: string; // ERC20トークンアドレス（オプション）
 }
+
+export const misstakeList = [
+  {
+    miss: "https://prcdn.freetls.fastly.net/release_image/46288/150/46288-150-4068449046755ead34a8b0[…]pg?format=jpeg&auto=webp&fit=bounds&width=720&height=480",
+    correct:
+      "https://prcdn.freetls.fastly.net/release_image/46288/150/46288-150-4068449046755ead34a8b0c5252c2b82-1280x720.jpg?width=1950&height=1350&quality=85%2C75&format=jpeg&auto=webp&fit=bounds&bg-color=fff",
+  },
+  {
+    miss: "https://drive.google.com/file/d/1xBsNosSi2nDfnFr_CsIuQrgkJbEA8vsg/view?usp=drive_link",
+    correct:
+      "https://prcdn.freetls.fastly.net/release_image/46288/150/46288-150-4068449046755ead34a8b0c5252c2b82-1280x720.jpg?width=1950&height=1350&quality=85%2C75&format=jpeg&auto=webp&fit=bounds&bg-color=fff",
+  }
+];
 
 /**
  * 広告オークションコントラクトの入札履歴を取得
@@ -33,14 +47,17 @@ export async function POST(request: NextRequest) {
       // リクエストボディが空または無効なJSONの場合は空オブジェクトを使用
       console.warn("Failed to parse request body, using defaults:", error);
     }
-    
+
     // コントラクトアドレスを環境変数から取得、リクエストボディからも取得可能
     const contractAddress = body.contractAddress || COMMERCIAL_CONTRACT_ADDRESS;
     let erc20TokenAddress = body.erc20TokenAddress;
 
     if (!contractAddress || typeof contractAddress !== "string") {
       return NextResponse.json(
-        { error: "Valid contract address is required. Set NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS in .env.local or pass in request body." },
+        {
+          error:
+            "Valid contract address is required. Set NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS in .env.local or pass in request body.",
+        },
         { status: 400 }
       );
     }
@@ -76,7 +93,10 @@ export async function POST(request: NextRequest) {
           functionName: "getERC20TokenAddress",
         });
       } catch (error) {
-        console.error("Failed to get ERC20 token address from contract:", error);
+        console.error(
+          "Failed to get ERC20 token address from contract:",
+          error
+        );
         // ERC20トークンアドレスが取得できない場合は、すべてのERC20転送を取得
       }
     }
@@ -94,7 +114,10 @@ export async function POST(request: NextRequest) {
     };
 
     // ERC20トークンアドレスが指定されている場合、そのトークンのみを取得
-    if (erc20TokenAddress && erc20TokenAddress !== "0x0000000000000000000000000000000000000000") {
+    if (
+      erc20TokenAddress &&
+      erc20TokenAddress !== "0x0000000000000000000000000000000000000000"
+    ) {
       params.contractAddresses = [erc20TokenAddress.toLowerCase()];
     }
 
@@ -112,13 +135,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`Alchemy API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Alchemy API error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
 
     if (data.error) {
-      throw new Error(`Alchemy API error: ${data.error.message || JSON.stringify(data.error)}`);
+      throw new Error(
+        `Alchemy API error: ${data.error.message || JSON.stringify(data.error)}`
+      );
     }
 
     const transfers = data.result?.transfers || [];
@@ -145,46 +172,49 @@ export async function POST(request: NextRequest) {
     // 転送履歴を整形（広告データも取得）
     const history = await Promise.all(
       transfers.map(async (transfer: any) => {
-      // Alchemy APIのERC20転送の場合、値はrawContract.valueに16進数文字列で含まれる
-      // またはtransfer.valueに含まれる場合もある
-      let value: string;
-      
-      // まずrawContract.valueを確認（ERC20の場合、通常はこちら）
-      if (transfer.rawContract?.value) {
-        // rawContract.valueは16進数文字列（例: "0x56bc75e2d630e0000"）
-        const rawValue = transfer.rawContract.value;
-        if (typeof rawValue === "string" && rawValue.startsWith("0x")) {
-          value = BigInt(rawValue).toString();
+        // Alchemy APIのERC20転送の場合、値はrawContract.valueに16進数文字列で含まれる
+        // またはtransfer.valueに含まれる場合もある
+        let value: string;
+
+        // まずrawContract.valueを確認（ERC20の場合、通常はこちら）
+        if (transfer.rawContract?.value) {
+          // rawContract.valueは16進数文字列（例: "0x56bc75e2d630e0000"）
+          const rawValue = transfer.rawContract.value;
+          if (typeof rawValue === "string" && rawValue.startsWith("0x")) {
+            value = BigInt(rawValue).toString();
+          } else {
+            value = rawValue.toString();
+          }
+        } else if (transfer.value) {
+          // transfer.valueが存在する場合（フォールバック）
+          if (
+            typeof transfer.value === "string" &&
+            transfer.value.startsWith("0x")
+          ) {
+            // 16進数文字列の場合
+            value = BigInt(transfer.value).toString();
+          } else if (typeof transfer.value === "number") {
+            // 数値の場合、これはすでにフォーマットされた値の可能性がある
+            // しかし、Alchemy APIのERC20転送では通常wei単位の数値文字列が返される
+            // 安全のため、そのまま使用する（ただし、これは問題の原因かもしれない）
+            value = transfer.value.toString();
+          } else {
+            // 文字列の場合
+            value = transfer.value.toString();
+          }
         } else {
-          value = rawValue.toString();
+          value = "0";
         }
-      } else if (transfer.value) {
-        // transfer.valueが存在する場合（フォールバック）
-        if (typeof transfer.value === "string" && transfer.value.startsWith("0x")) {
-          // 16進数文字列の場合
-          value = BigInt(transfer.value).toString();
-        } else if (typeof transfer.value === "number") {
-          // 数値の場合、これはすでにフォーマットされた値の可能性がある
-          // しかし、Alchemy APIのERC20転送では通常wei単位の数値文字列が返される
-          // 安全のため、そのまま使用する（ただし、これは問題の原因かもしれない）
-          value = transfer.value.toString();
-        } else {
-          // 文字列の場合
-          value = transfer.value.toString();
+
+        // デバッグ用ログ（JPYCの場合のみ）
+        if (transfer.asset === "JPYC" || transfer.asset === "JPYD") {
+          console.log("JPYC transfer value processing:", {
+            rawContractValue: transfer.rawContract?.value,
+            transferValue: transfer.value,
+            finalValue: value,
+            asset: transfer.asset,
+          });
         }
-      } else {
-        value = "0";
-      }
-      
-      // デバッグ用ログ（JPYCの場合のみ）
-      if (transfer.asset === "JPYC" || transfer.asset === "JPYD") {
-        console.log("JPYC transfer value processing:", {
-          rawContractValue: transfer.rawContract?.value,
-          transferValue: transfer.value,
-          finalValue: value,
-          asset: transfer.asset,
-        });
-      }
 
         // トランザクションからAdBidPlacedイベントを取得
         let adData: {
@@ -249,8 +279,16 @@ export async function POST(request: NextRequest) {
           }
         } catch (error) {
           // トランザクションが見つからない場合や、エラーが発生した場合はスキップ
-          console.error(`Failed to get transaction receipt for ${transfer.hash}:`, error);
+          console.error(
+            `Failed to get transaction receipt for ${transfer.hash}:`,
+            error
+          );
         }
+        // 間違えているなら正しい画像URLに差し替え
+        const goodimageUrl =
+          misstakeList.find((item) => item.miss === adData.imageUrl)?.correct ||
+          adData.imageUrl;
+        console.log({ imageUrl: adData.imageUrl, goodimageUrl: goodimageUrl });
 
         return {
           transactionHash: transfer.hash,
@@ -261,7 +299,7 @@ export async function POST(request: NextRequest) {
           from: transfer.from || "",
           value: value,
           tokenSymbol: transfer.asset || "Unknown",
-          imageUrl: adData.imageUrl,
+          imageUrl: goodimageUrl,
           altText: adData.altText,
           hrefUrl: adData.hrefUrl,
         };
@@ -269,7 +307,9 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({
-      history: history.sort((a: any, b: any) => (b.blockNumber || 0) - (a.blockNumber || 0)),
+      history: history.sort(
+        (a: any, b: any) => (b.blockNumber || 0) - (a.blockNumber || 0)
+      ),
       total: history.length,
     });
   } catch (error) {
@@ -283,4 +323,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
