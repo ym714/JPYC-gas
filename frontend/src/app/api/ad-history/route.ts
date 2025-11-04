@@ -23,7 +23,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body: AdHistoryRequest = await request.json();
+    let body: AdHistoryRequest = {};
+    try {
+      const requestBody = await request.text();
+      if (requestBody) {
+        body = JSON.parse(requestBody);
+      }
+    } catch (error) {
+      // リクエストボディが空または無効なJSONの場合は空オブジェクトを使用
+      console.warn("Failed to parse request body, using defaults:", error);
+    }
+    
     // コントラクトアドレスを環境変数から取得、リクエストボディからも取得可能
     const contractAddress = body.contractAddress || COMMERCIAL_CONTRACT_ADDRESS;
     let erc20TokenAddress = body.erc20TokenAddress;
@@ -151,14 +161,29 @@ export async function POST(request: NextRequest) {
       } else if (transfer.value) {
         // transfer.valueが存在する場合（フォールバック）
         if (typeof transfer.value === "string" && transfer.value.startsWith("0x")) {
+          // 16進数文字列の場合
           value = BigInt(transfer.value).toString();
         } else if (typeof transfer.value === "number") {
+          // 数値の場合、これはすでにフォーマットされた値の可能性がある
+          // しかし、Alchemy APIのERC20転送では通常wei単位の数値文字列が返される
+          // 安全のため、そのまま使用する（ただし、これは問題の原因かもしれない）
           value = transfer.value.toString();
         } else {
+          // 文字列の場合
           value = transfer.value.toString();
         }
       } else {
         value = "0";
+      }
+      
+      // デバッグ用ログ（JPYCの場合のみ）
+      if (transfer.asset === "JPYC" || transfer.asset === "JPYD") {
+        console.log("JPYC transfer value processing:", {
+          rawContractValue: transfer.rawContract?.value,
+          transferValue: transfer.value,
+          finalValue: value,
+          asset: transfer.asset,
+        });
       }
 
         // トランザクションからAdBidPlacedイベントを取得
@@ -206,7 +231,17 @@ export async function POST(request: NextRequest) {
               };
               // bidAmountが取得できた場合、それを使用（より正確）
               if (bidAmount !== undefined) {
+                const oldValue = value;
                 value = bidAmount.toString();
+                // デバッグ用ログ（JPYCの場合のみ）
+                if (transfer.asset === "JPYC" || transfer.asset === "JPYD") {
+                  console.log("JPYC AdBidPlaced event:", {
+                    transferValue: oldValue,
+                    bidAmount: bidAmount.toString(),
+                    finalValue: value,
+                    asset: transfer.asset,
+                  });
+                }
               }
             } catch (error) {
               console.error("Failed to decode AdBidPlaced event:", error);

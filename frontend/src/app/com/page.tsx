@@ -11,11 +11,43 @@ import { polygon } from "viem/chains";
 // コントラクトアドレス
 const COMMERCIAL_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS as Address | undefined;
 
+// JPYCトークンアドレス
+const JPYC_TOKEN_ADDRESS = "0xE7C3D8C9a439feDe00D2600032D5dB0Be71C3c29" as Address;
+
 // Public clientを作成
 const publicClient = createPublicClient({
   chain: polygon,
   transport: http(),
 });
+
+// ERC20標準のABI（decimals関数用）
+const ERC20_ABI = [
+  {
+    inputs: [],
+    name: "decimals",
+    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
+
+// JPYCトークンのdecimalsを取得する関数
+async function getJPYCDecimals(): Promise<number> {
+  try {
+    const decimals = await publicClient.readContract({
+      address: JPYC_TOKEN_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: "decimals",
+    });
+    const decimalsNum = Number(decimals);
+    console.log("JPYC decimals from contract:", decimalsNum);
+    return decimalsNum;
+  } catch (error) {
+    console.error("Failed to get JPYC decimals, using default 18:", error);
+    // JPYCトークンは18 decimals
+    return 18;
+  }
+}
 
 // ABI
 const AD_AUCTION_ABI = [
@@ -117,6 +149,7 @@ export default function ComPage() {
   const [minBidAmount, setMinBidAmount] = useState<{ amount: bigint; formatted: string; symbol: string } | null>(null);
   const [tokenSymbol, setTokenSymbol] = useState<string>("POL");
   const [tokenDecimals, setTokenDecimals] = useState<number>(18);
+  const [jpycDecimals, setJpycDecimals] = useState<number>(18); // JPYCのdecimals（18 decimals）
   
   // 入札関連の状態
   const [bidImageUrl, setBidImageUrl] = useState("");
@@ -158,10 +191,11 @@ export default function ComPage() {
       
       setAdLoading(true);
       try {
-        const [ad, minBid, tokenInfo] = await Promise.all([
+        const [ad, minBid, tokenInfo, jpycDec] = await Promise.all([
           getCurrentAd(),
           getMinBidAmount(),
           getTokenInfo(),
+          getJPYCDecimals(),
         ]);
 
         if (ad) {
@@ -176,6 +210,8 @@ export default function ComPage() {
           setTokenSymbol(tokenInfo.symbol);
           setTokenDecimals(tokenInfo.decimals);
         }
+
+        setJpycDecimals(jpycDec);
       } catch (error) {
         console.error("Failed to fetch ad:", error);
       } finally {
@@ -611,13 +647,28 @@ export default function ComPage() {
                             try {
                               // valueをBigIntに変換して、適切なdecimalsでフォーマット
                               const valueBigInt = BigInt(item.value || "0");
-                              // tokenDecimalsが18以外の場合も考慮（JPYCは通常18）
-                              const decimals = item.tokenSymbol === "JPYC" ? 18 : tokenDecimals;
+                              // JPYCの場合は実際のdecimalsを使用（Polygonでは通常6）
+                              const decimals = item.tokenSymbol === "JPYC" ? jpycDecimals : tokenDecimals;
                               const formatted = formatUnits(valueBigInt, decimals);
-                              // formatUnitsが返す文字列から、末尾の不要な0を削除
+                              // デバッグ用ログ
+                              if (item.tokenSymbol === "JPYC") {
+                                console.log("JPYC value formatting:", {
+                                  rawValue: item.value,
+                                  valueBigInt: valueBigInt.toString(),
+                                  decimals: decimals,
+                                  jpycDecimals: jpycDecimals,
+                                  formatted: formatted,
+                                });
+                              }
+                              // formatUnitsが返す文字列から、小数点以下の末尾の不要な0を削除
                               // 例: "0.000000000000000100" -> "0.0000000000000001"
                               // 例: "100.000000000000000000" -> "100"
-                              return formatted.replace(/\.?0+$/, "");
+                              // 小数点がある場合のみ、小数点以下の末尾の0を削除
+                              if (formatted.includes(".")) {
+                                return formatted.replace(/\.?0+$/, "");
+                              }
+                              // 小数点がない場合はそのまま返す
+                              return formatted;
                             } catch (error) {
                               console.error("Error formatting value:", error, item.value);
                               return item.value || "0";
