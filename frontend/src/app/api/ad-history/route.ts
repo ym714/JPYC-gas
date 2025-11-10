@@ -11,6 +11,48 @@ interface AdHistoryRequest {
   erc20TokenAddress?: string; // ERC20トークンアドレス（オプション）
 }
 
+interface AssetTransferParams {
+  fromBlock: string;
+  toBlock: string;
+  category: string[];
+  toAddress: string;
+  excludeZeroValue: boolean;
+  maxCount: string;
+  order: "asc" | "desc";
+  withMetadata: boolean;
+  contractAddresses?: string[];
+}
+
+interface TransferMetadata {
+  blockTimestamp?: string;
+}
+
+interface RawContractInfo {
+  value?: string | number;
+}
+
+interface AssetTransfer {
+  asset?: string;
+  blockNum: string;
+  hash: string;
+  metadata?: TransferMetadata;
+  rawContract?: RawContractInfo;
+  value?: string | number;
+  from?: string;
+}
+
+interface AdHistoryEntry {
+  transactionHash: string;
+  blockNumber: number;
+  timestamp: number | null;
+  from: string;
+  value: string;
+  tokenSymbol: string;
+  imageUrl?: string;
+  altText?: string;
+  hrefUrl?: string;
+}
+
 export const misstakeList = [
   {
     miss: "https://prcdn.freetls.fastly.net/release_image/46288/150/46288-150-4068449046755ead34a8b0[…]pg?format=jpeg&auto=webp&fit=bounds&width=720&height=480",
@@ -102,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Alchemy APIを使ってコントラクトへのERC20転送を取得
-    const params: any = {
+    const params: AssetTransferParams = {
       fromBlock: "0x0",
       toBlock: "latest",
       category: ["erc20"],
@@ -148,7 +190,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const transfers = data.result?.transfers || [];
+    const transfers: AssetTransfer[] = Array.isArray(data.result?.transfers)
+      ? (data.result.transfers as AssetTransfer[])
+      : [];
 
     // 転送履歴を整形（広告データも取得）
     const publicClient = createPublicClient({
@@ -170,8 +214,8 @@ export async function POST(request: NextRequest) {
     } as const;
 
     // 転送履歴を整形（広告データも取得）
-    const history = await Promise.all(
-      transfers.map(async (transfer: any) => {
+    const history: AdHistoryEntry[] = await Promise.all(
+      transfers.map(async (transfer) => {
         // Alchemy APIのERC20転送の場合、値はrawContract.valueに16進数文字列で含まれる
         // またはtransfer.valueに含まれる場合もある
         let value: string;
@@ -308,7 +352,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       history: history.sort(
-        (a: any, b: any) => (b.blockNumber || 0) - (a.blockNumber || 0)
+        (a, b) => (b.blockNumber || 0) - (a.blockNumber || 0)
       ),
       total: history.length,
     });

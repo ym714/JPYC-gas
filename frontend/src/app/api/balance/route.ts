@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkBalance } from "@/lib/checkBalance";
 
 /**
- * 指定されたアドレスのPOL残高を取得
+ * 指定されたアドレスのAVAX残高を取得
  */
 export async function POST(request: NextRequest) {
   try {
@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       address: balanceData.address,
-      balance: balanceData.balanceMatic,
-      balanceFormatted: balanceData.balanceMaticFormatted,
+      balance: balanceData.balanceAvax,
+      balanceFormatted: balanceData.balanceAvaxFormatted,
       balanceWei: balanceData.balanceWei,
     });
   } catch (error) {

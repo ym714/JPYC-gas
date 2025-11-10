@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "JPYCユーザーのガス代支援",
   description:
     "JPYCしか受け取れずガス代が払えずロックされる問題を解決するサービス。JPYC社からの振込履歴があるKYC済みアドレスにガス代を送ってロックを解消します。",
-  keywords: ["JPYC", "ガス代", "Polygon", "MATIC", "POL", "DeFi", "ウォレット"],
+  keywords: ["JPYC", "ガス代", "Avalanche", "AVAX", "DeFi", "ウォレット"],
   authors: [{ name: "JPYC Gas Fee Support" }],
   openGraph: {
     title: "JPYCユーザーのガス代支援",

@@ -3,13 +3,13 @@ const ALCHEMY_ENDPOINT = process.env.ALCHEMY_ENDPOINT;
 export interface BalanceData {
   address: string;
   balanceWei: string;
-  balanceMatic: number;
-  balanceMaticFormatted: string;
+  balanceAvax: number;
+  balanceAvaxFormatted: string;
   eligible: boolean;
 }
 
 /**
- * アドレスのPOL（MATIC）残高をチェック
+ * アドレスのAVAX残高をチェック
  */
 export async function checkBalance(address: string): Promise<BalanceData> {
   if (!ALCHEMY_ENDPOINT) {
@@ -48,17 +48,16 @@ export async function checkBalance(address: string): Promise<BalanceData> {
     throw new Error(`Alchemy API error: ${data.error.message || JSON.stringify(data.error)}`);
   }
 
-  // WeiからMATICに変換（1 MATIC = 10^18 Wei）
+  // WeiからAVAXに変換（1 AVAX = 10^18 Wei）
   const balanceWei = BigInt(data.result || "0x0");
-  const balanceMatic = Number(balanceWei) / 1e18;
+  const balanceAvax = Number(balanceWei) / 1e18;
 
   return {
     address: address,
     balanceWei: balanceWei.toString(),
-    balanceMatic: balanceMatic,
-    balanceMaticFormatted: balanceMatic.toFixed(6),
-    eligible: balanceMatic <= 0.02, // 0.02 POL以下の場合にclaim可能
+    balanceAvax: balanceAvax,
+    balanceAvaxFormatted: balanceAvax.toFixed(6),
+    eligible: balanceAvax <= 0.001, // 0.001 AVAX以下の場合にclaim可能
   };
 }
-
 

@@ -6,18 +6,18 @@ import { checkSenderTransfer } from "@/lib/checkSenderTransfer";
 const ALCHEMY_ENDPOINT = process.env.ALCHEMY_ENDPOINT;
 const SECRET_KEY = process.env.SECRET_KEY;
 const SENDER_ADDRESS = process.env.ADDRESS;
-const CLAIM_AMOUNT = "0.02"; // 0.02 POL
+const CLAIM_AMOUNT = "0.001"; // 0.001 AVAX
 
 // JPYC社のアドレスとJPYCトークンのコントラクトアドレス
-const JPYC_COMPANY_ADDRESS = "0x8549E82239a88f463ab6E55Ad1895b629a00Def3";
+const JPYC_COMPANY_ADDRESS = "0x3fFc3f356C253eE207f7B5Fe0777f3867DBe1752";
 const JPYC_TOKEN_ADDRESS = "0xE7C3D8C9a439feDe00D2600032D5dB0Be71C3c29";
 
 /**
  * claim実行用のAPIエンドポイント
  * 1. JPYC受け取り履歴をチェック
- * 2. POL残高が0.02以下かチェック
+ * 2. AVAX残高が0.001以下かチェック
  * 3. ADDRESSから送信先への送信履歴をチェック
- * 4. 条件を満たしたら0.02 POLを送信
+ * 4. 条件を満たしたら0.001 AVAXを送信
  */
 export async function POST(request: NextRequest) {
   try {
@@ -72,6 +72,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. JPYC受け取り履歴をチェック
+    type TokenTransfer = {
+      value?: string;
+    };
+
     let jpycData;
     try {
       const response = await fetch(ALCHEMY_ENDPOINT, {
@@ -110,11 +114,13 @@ export async function POST(request: NextRequest) {
         throw new Error(`Alchemy API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
 
-      const transfers = data.result?.transfers || [];
+      const transfers: TokenTransfer[] = Array.isArray(data.result?.transfers)
+        ? (data.result.transfers as TokenTransfer[])
+        : [];
       jpycData = {
         verified: transfers.length > 0,
         transfersCount: transfers.length,
-        totalReceived: transfers.reduce((sum: number, transfer: any) => {
+        totalReceived: transfers.reduce((sum: number, transfer) => {
           return sum + parseFloat(transfer.value || "0");
         }, 0),
       };
@@ -139,7 +145,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. POL残高をチェック（0.02 POL以下かどうか）
+    // 2. AVAX残高をチェック（0.001 AVAX以下かどうか）
     let balanceData;
     try {
       balanceData = await checkBalance(address);
@@ -156,9 +162,9 @@ export async function POST(request: NextRequest) {
     if (!balanceData.eligible) {
       return NextResponse.json(
         {
-          error: "Address balance is above 0.02 POL",
-          balance: balanceData.balanceMatic,
-          balanceFormatted: balanceData.balanceMaticFormatted,
+          error: "Address balance is above 0.001 AVAX",
+          balance: balanceData.balanceAvax,
+          balanceFormatted: balanceData.balanceAvaxFormatted,
         },
         { status: 400 }
       );
@@ -182,14 +188,14 @@ export async function POST(request: NextRequest) {
     if (transferData.verified && transferData.transfersCount > 0) {
       return NextResponse.json(
         {
-          error: "This address has already received POL from the sender address",
+          error: "This address has already received AVAX from the sender address",
           transfersCount: transferData.transfersCount,
         },
         { status: 400 }
       );
     }
 
-    // 4. 0.02 POLを送信
+    // 4. 0.001 AVAXを送信
     let provider;
     let wallet;
     try {
@@ -261,17 +267,17 @@ export async function POST(request: NextRequest) {
       amount: CLAIM_AMOUNT,
       transactionHash: receipt?.hash || tx.hash,
       blockNumber: receipt?.blockNumber?.toString(),
-      balanceBefore: balanceData.balanceMatic,
+      balanceBefore: balanceData.balanceAvax,
       senderTransferVerified: true,
     });
   } catch (error) {
-    console.error("Error claiming POL:", error);
+    console.error("Error claiming AVAX:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorStack = error instanceof Error ? error.stack : undefined;
     
     return NextResponse.json(
       {
-        error: "Failed to claim POL",
+        error: "Failed to claim AVAX",
         details: errorMessage,
         stack: process.env.NODE_ENV === "development" ? errorStack : undefined,
       },

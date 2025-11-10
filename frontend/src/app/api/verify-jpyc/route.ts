@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // JPYC社のアドレスとJPYCトークンのコントラクトアドレス
-const JPYC_COMPANY_ADDRESS = "0x8549E82239a88f463ab6E55Ad1895b629a00Def3";
+const JPYC_COMPANY_ADDRESS = "0x3fFc3f356C253eE207f7B5Fe0777f3867DBe1752";
 const JPYC_TOKEN_ADDRESS = "0xE7C3D8C9a439feDe00D2600032D5dB0Be71C3c29";
 
 // Alchemy ENDPOINT URL（APIキーが含まれている）
@@ -83,7 +83,16 @@ export async function POST(request: NextRequest) {
       throw new Error(`Alchemy API error: ${data.error.message || JSON.stringify(data.error)}`);
     }
 
-    const transfers = data.result?.transfers || [];
+    type TokenTransfer = {
+      value?: string;
+      blockNum?: string;
+      hash?: string;
+      metadata?: { blockTimestamp?: string };
+    };
+
+    const transfers: TokenTransfer[] = Array.isArray(data.result?.transfers)
+      ? (data.result.transfers as TokenTransfer[])
+      : [];
 
     // 転送が見つかったかどうか
     const hasReceivedJPYC = transfers.length > 0;
@@ -92,7 +101,7 @@ export async function POST(request: NextRequest) {
     const latestTransfer = transfers[0] || null;
 
     // 転送の総額を計算
-    const totalReceived = transfers.reduce((sum: number, transfer: any) => {
+    const totalReceived = transfers.reduce((sum: number, transfer) => {
       const value = parseFloat(transfer.value || "0");
       return sum + value;
     }, 0);
@@ -163,4 +172,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

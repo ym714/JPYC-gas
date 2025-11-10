@@ -53,7 +53,7 @@ export async function checkSenderTransfer(address: string): Promise<SenderTransf
         {
           fromBlock: "0x0",
           toBlock: "latest",
-          category: ["external"], // External transfers for native POL/MATIC
+          category: ["external"], // External transfers for native AVAX
           toAddress: address.toLowerCase(),
           fromAddress: SENDER_ADDRESS.toLowerCase(),
           excludeZeroValue: true,
@@ -75,13 +75,22 @@ export async function checkSenderTransfer(address: string): Promise<SenderTransf
     throw new Error(`Alchemy API error: ${data.error.message || JSON.stringify(data.error)}`);
   }
 
-  const transfers = data.result?.transfers || [];
+  type NativeTransfer = {
+    value?: string;
+    blockNum: string;
+    hash: string;
+    metadata?: { blockTimestamp?: string };
+  };
+
+  const transfers: NativeTransfer[] = Array.isArray(data.result?.transfers)
+    ? (data.result.transfers as NativeTransfer[])
+    : [];
   const hasReceived = transfers.length > 0;
 
   const latestTransfer = transfers[0] || null;
 
   // 総受取額を計算
-  const totalReceived = transfers.reduce((sum: number, transfer: any) => {
+  const totalReceived = transfers.reduce((sum: number, transfer) => {
     const value = parseFloat(transfer.value || "0");
     return sum + value;
   }, 0);
@@ -96,13 +105,12 @@ export async function checkSenderTransfer(address: string): Promise<SenderTransf
       ? {
           blockNumber: latestTransfer.blockNum,
           transactionHash: latestTransfer.hash,
-          value: latestTransfer.value,
+          value: latestTransfer.value ?? "0",
           timestamp: latestTransfer.metadata?.blockTimestamp,
         }
       : null,
     message: hasReceived
-      ? "This address has received POL from the sender address"
-      : "This address has not received POL from the sender address",
+      ? "This address has received AVAX from the sender address"
+      : "This address has not received AVAX from the sender address",
   };
 }
-

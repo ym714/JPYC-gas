@@ -42,7 +42,7 @@ export default function Home() {
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
 
-  // 寄付アドレスのPOL残高
+  // 寄付アドレスのAVAX残高
   const [donationBalance, setDonationBalance] = useState<string | null>(null);
   const [donationBalanceLoading, setDonationBalanceLoading] = useState(false);
 
@@ -64,7 +64,7 @@ export default function Home() {
     hash,
   });
 
-  // 寄付アドレスのPOL残高を取得
+  // 寄付アドレスのAVAX残高を取得
   const DONATION_ADDRESS = "0xE7C3849f94FB6A733E372E991aa12Fee30607119";
   
   useEffect(() => {
@@ -247,8 +247,8 @@ export default function Home() {
         if (data.details) {
           errorMessage += `: ${data.details}`;
         }
-        if (data.balanceFormatted) {
-          errorMessage += ` (現在の残高: ${data.balanceFormatted} POL)`;
+          if (data.balanceFormatted) {
+          errorMessage += ` (現在の残高: ${data.balanceFormatted} AVAX)`;
         }
         if (data.transfersCount !== undefined) {
           errorMessage += ` (送信履歴: ${data.transfersCount}回)`;
@@ -328,7 +328,9 @@ export default function Home() {
             <div className="flex items-center justify-center gap-2">
               <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">広告</p>
               <a
-                href="/com"
+                href="https://jpyc-volunteer.vercel.app/com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
               >
                 広告出稿希望の方はこちらへ
@@ -365,7 +367,7 @@ export default function Home() {
               <div className="space-y-4">
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
                   JPYC社からの振込履歴があり、かつガス代が不足している場合、
-                  ガス代（0.02 POL）を受け取ることができます。
+                  ガス代（0.001 AVAX）を受け取ることができます。
                 </p>
 
                 {claimError && (
@@ -383,13 +385,13 @@ export default function Home() {
                       <div className="flex justify-between">
                         <span className="text-zinc-600 dark:text-zinc-400">送信額:</span>
                         <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-                          {claimResult.amount} POL
+                          {claimResult.amount} AVAX
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-zinc-600 dark:text-zinc-400">トランザクションハッシュ:</span>
                         <a
-                          href={`https://polygonscan.com/tx/${claimResult.transactionHash}`}
+                          href={`https://snowtrace.io/tx/${claimResult.transactionHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-mono text-xs text-blue-600 dark:text-blue-400 hover:underline"
@@ -556,31 +558,31 @@ export default function Home() {
 
           {/* フッター情報 */}
           <div className="text-center text-sm text-zinc-500 dark:text-zinc-500 space-y-2">
-            <p>JPYC社アドレス: 0x8549E82239a88f463ab6E55Ad1895b629a00Def3</p>
+            <p>JPYC社アドレス: 0x3fFc3f356C253eE207f7B5Fe0777f3867DBe1752</p>
             <p>JPYCトークン: 0xE7C3D8C9a439feDe00D2600032D5dB0Be71C3c29</p>
-            <p>ネットワーク: Polygon Mainnet</p>
+            <p>ネットワーク: Avalanche Mainnet (C-Chain)</p>
           </div>
 
           {/* 寄付情報 */}
           <div className="text-center text-sm text-zinc-600 dark:text-zinc-400 space-y-2 mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
             <p className="font-medium text-zinc-700 dark:text-zinc-300">
-              もしこの活動に参加していただける方はこのアドレスに寄付をお願いします。ネイティブトークンPOLを送ってください。
+              もしこの活動に参加していただける方はこのアドレスに寄付をお願いします。ネイティブトークンAVAXを送ってください。
             </p>
             <p className="font-mono text-xs text-blue-600 dark:text-blue-400 break-all">
               0xE7C3849f94FB6A733E372E991aa12Fee30607119
               {donationBalance !== null && (
                 <span className="ml-2 text-zinc-700 dark:text-zinc-300 font-medium">
-                  ({donationBalanceLoading ? "読み込み中..." : `${donationBalance} POL`})
+                  ({donationBalanceLoading ? "読み込み中..." : `${donationBalance} AVAX`})
                 </span>
               )}
             </p>
             <a
-              href={`https://polygonscan.com/address/0xE7C3849f94FB6A733E372E991aa12Fee30607119`}
+              href={`https://snowtrace.io/address/0xE7C3849f94FB6A733E372E991aa12Fee30607119`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block text-xs text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Polygonscanで確認
+              Snowtraceで確認
             </a>
           </div>
         </div>
