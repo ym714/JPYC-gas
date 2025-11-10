@@ -65,7 +65,7 @@ export default function Home() {
   });
 
   // 寄付アドレスのAVAX残高を取得
-  const DONATION_ADDRESS = "0xE7C3849f94FB6A733E372E991aa12Fee30607119";
+  const DONATION_ADDRESS = "0x11101821fc4323C30bA24538d276d4eC959f200E";
   
   useEffect(() => {
     const fetchDonationBalance = async () => {
@@ -569,7 +569,7 @@ export default function Home() {
               もしこの活動に参加していただける方はこのアドレスに寄付をお願いします。ネイティブトークンAVAXを送ってください。
             </p>
             <p className="font-mono text-xs text-blue-600 dark:text-blue-400 break-all">
-              0xE7C3849f94FB6A733E372E991aa12Fee30607119
+              0x11101821fc4323C30bA24538d276d4eC959f200E
               {donationBalance !== null && (
                 <span className="ml-2 text-zinc-700 dark:text-zinc-300 font-medium">
                   ({donationBalanceLoading ? "読み込み中..." : `${donationBalance} AVAX`})
@@ -577,7 +577,7 @@ export default function Home() {
               )}
             </p>
             <a
-              href={`https://snowtrace.io/address/0xE7C3849f94FB6A733E372E991aa12Fee30607119`}
+              href={`https://snowtrace.io/address/0x11101821fc4323C30bA24538d276d4eC959f200E`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block text-xs text-blue-600 dark:text-blue-400 hover:underline"
