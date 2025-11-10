@@ -98,27 +98,27 @@ export default function Home() {
     return () => {};
   }, []);
 
-  // 広告データを取得（APIキャッシュを利用）
+  // 広告データを取得（ad-history APIのcurrentフィールドを使用）
   useEffect(() => {
     const fetchAd = async () => {
       setAdLoading(true);
       try {
-        const res = await fetch("/api/current-ad", {
-          method: "GET",
-          // CDNキャッシュを活かしつつ、ブラウザキャッシュも使う
-          headers: { "Accept": "application/json" },
-        });
+        const res = await fetch("https://jpyc-volunteer.vercel.app/api/pol/ad-history");
         if (res.ok) {
           const data = await res.json();
-          const ad: Commercial = {
-            bidder: data.bidder,
-            bidAmount: data.bidAmount,
-            "image-url": data["image-url"] || defaultCommercial["image-url"],
-            "alt-text": data["alt-text"] || defaultCommercial["alt-text"],
-            "href-url": data["href-url"] || defaultCommercial["href-url"],
-            timestamp: data.timestamp,
-          };
-          setCommercial(ad);
+          if (data.current) {
+            const current = data.current;
+            
+            const ad: Commercial = {
+              "image-url": current.imageUrl || defaultCommercial["image-url"],
+              "alt-text": current.altText || defaultCommercial["alt-text"],
+              "href-url": current.hrefUrl || defaultCommercial["href-url"],
+            };
+            setCommercial(ad);
+          } else {
+            // currentが取得できない場合はデフォルト
+            setCommercial(defaultCommercial);
+          }
         } else {
           // APIが失敗した場合のみデフォルト
           setCommercial(defaultCommercial);
@@ -141,23 +141,24 @@ export default function Home() {
     return () => {};
   }, []);
 
-  // 入札が成功したら広告を再取得（APIキャッシュ経由）
+  // 入札が成功したら広告を再取得（ad-history APIのcurrentフィールドを使用）
   useEffect(() => {
     if (isConfirmed) {
       const fetchAd = async () => {
         try {
-          const res = await fetch("/api/current-ad");
+          const res = await fetch("https://jpyc-volunteer.vercel.app/api/pol/ad-history");
           if (res.ok) {
             const data = await res.json();
-            const ad: Commercial = {
-              bidder: data.bidder,
-              bidAmount: data.bidAmount,
-              "image-url": data["image-url"] || defaultCommercial["image-url"],
-              "alt-text": data["alt-text"] || defaultCommercial["alt-text"],
-              "href-url": data["href-url"] || defaultCommercial["href-url"],
-              timestamp: data.timestamp,
-            };
-            setCommercial(ad);
+            if (data.current) {
+              const current = data.current;
+              
+              const ad: Commercial = {
+                "image-url": current.imageUrl || defaultCommercial["image-url"],
+                "alt-text": current.altText || defaultCommercial["alt-text"],
+                "href-url": current.hrefUrl || defaultCommercial["href-url"],
+              };
+              setCommercial(ad);
+            }
           }
         } catch {}
         const minBid = await getMinBidAmount();
