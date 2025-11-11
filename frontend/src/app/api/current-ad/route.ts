@@ -5,6 +5,8 @@ import { misstakeList } from "../ad-history/route";
 
 const ALCHEMY_ENDPOINT = process.env.ALCHEMY_ENDPOINT;
 const AD_AUCTION_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS as `0x${string}` | undefined;
+const REMOTE_AD_API =
+  process.env.NEXT_PUBLIC_REMOTE_AD_API || "https://jpyc-volunteer.vercel.app/api/pol/current-ad";
 
 const AD_AUCTION_ABI = [
   {
@@ -25,6 +27,28 @@ const AD_AUCTION_ABI = [
 
 export async function GET() {
   try {
+    // 1. まず公式APIから現在の広告データを取得
+    try {
+      const remoteRes = await fetch(REMOTE_AD_API, {
+        headers: { Accept: "application/json" },
+        next: { revalidate: 30 },
+      });
+
+      if (remoteRes.ok) {
+        const remoteData = await remoteRes.json();
+        const headers: Record<string, string> = {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300",
+          "CDN-Cache-Control": "public, s-maxage=30, stale-while-revalidate=300",
+          "Vercel-CDN-Cache-Control": "public, s-maxage=30, stale-while-revalidate=300",
+        };
+
+        return NextResponse.json(remoteData, { headers });
+      }
+    } catch (error) {
+      console.warn("Failed to fetch remote current ad. Falling back to contract data.", error);
+    }
+
+    // 2. 公式APIが取得できない場合は従来どおりコントラクトから参照
     if (!ALCHEMY_ENDPOINT) {
       return NextResponse.json({ error: "ALCHEMY_ENDPOINT is not configured" }, { status: 500 });
     }
@@ -72,5 +96,4 @@ export async function GET() {
     );
   }
 }
-
 

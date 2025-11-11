@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // JPYC社のアドレスとJPYCトークンのコントラクトアドレス
-const JPYC_COMPANY_ADDRESS = "0x3fFc3f356C253eE207f7B5Fe0777f3867DBe1752";
+const JPYC_COMPANY_ADDRESS = "0x8549E82239a88f463ab6E55Ad1895b629a00Def3";
 const JPYC_TOKEN_ADDRESS = "0xE7C3D8C9a439feDe00D2600032D5dB0Be71C3c29";
 
 // Alchemy ENDPOINT URL（APIキーが含まれている）
