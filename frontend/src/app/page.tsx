@@ -559,7 +559,7 @@ export default function Home() {
 
           {/* フッター情報 */}
           <div className="text-center text-sm text-zinc-500 dark:text-zinc-500 space-y-2">
-            <p>JPYC社アドレス: 0x3fFc3f356C253eE207f7B5Fe0777f3867DBe1752</p>
+            <p>JPYC社アドレス: 0x8549E82239a88f463ab6E55Ad1895b629a00Def3</p>
             <p>JPYCトークン: 0xE7C3D8C9a439feDe00D2600032D5dB0Be71C3c29</p>
             <p>ネットワーク: Avalanche Mainnet (C-Chain)</p>
           </div>
