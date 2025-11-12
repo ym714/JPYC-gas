@@ -245,9 +245,15 @@ export async function POST(request: NextRequest) {
     let receipt;
     try {
       feeData = await provider.getFeeData();
+      const fallbackGasPrice = ethers.parseUnits(
+        DEFAULT_GAS_PRICE_GWEI,
+        "gwei"
+      );
+
       gasPrice =
-        feeData.gasPrice ??
-        ethers.parseUnits(DEFAULT_GAS_PRICE_GWEI, "gwei");
+        feeData.gasPrice && feeData.gasPrice > fallbackGasPrice
+          ? feeData.gasPrice
+          : fallbackGasPrice;
 
       if (isDryRun) {
         return NextResponse.json({
