@@ -56,8 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { address, dryRun } = body;
-    const isDryRun = dryRun === true;
+    const { address } = body;
 
     if (!address || typeof address !== "string") {
       return NextResponse.json(
@@ -255,18 +254,6 @@ export async function POST(request: NextRequest) {
           ? feeData.gasPrice
           : fallbackGasPrice;
 
-      if (isDryRun) {
-        return NextResponse.json({
-          success: true,
-          dryRun: true,
-          address,
-          amount: CLAIM_AMOUNT,
-          gasPrice: gasPrice.toString(),
-          balanceBefore: balanceData.balanceAvax,
-          senderTransferVerified: true,
-        });
-      }
-
       tx = await wallet.sendTransaction({
         to: address,
         value: amountWei,
@@ -279,7 +266,6 @@ export async function POST(request: NextRequest) {
       console.error("Failed to send transaction", {
         message: error instanceof Error ? error.message : error,
         gasPrice: gasPrice?.toString(),
-        dryRun: isDryRun,
       });
       return NextResponse.json(
         {
