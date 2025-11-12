@@ -7,6 +7,7 @@ const ALCHEMY_ENDPOINT = process.env.ALCHEMY_ENDPOINT;
 const SECRET_KEY = process.env.SECRET_KEY;
 const SENDER_ADDRESS = process.env.ADDRESS;
 const CLAIM_AMOUNT = "0.001"; // 0.001 AVAX
+const DEFAULT_GAS_PRICE_GWEI = process.env.GAS_PRICE_GWEI ?? "30"; // fallback gas price
 
 // JPYC社のアドレスとJPYCトークンのコントラクトアドレス
 const JPYC_COMPANY_ADDRESS = "0x8549E82239a88f463ab6E55Ad1895b629a00Def3";
@@ -238,15 +239,19 @@ export async function POST(request: NextRequest) {
 
     // ガス価格とガスリミットを取得
     let feeData;
+    let gasPrice;
     let tx;
     let receipt;
     try {
       feeData = await provider.getFeeData();
+      gasPrice =
+        feeData.gasPrice ??
+        ethers.parseUnits(DEFAULT_GAS_PRICE_GWEI, "gwei");
 
       tx = await wallet.sendTransaction({
         to: address,
         value: amountWei,
-        gasPrice: feeData.gasPrice,
+        gasPrice,
       });
 
       // トランザクションを待機
