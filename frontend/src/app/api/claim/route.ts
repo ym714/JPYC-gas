@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { address } = body;
+    const { address, dryRun } = body;
+    const isDryRun = dryRun === true;
 
     if (!address || typeof address !== "string") {
       return NextResponse.json(
@@ -248,6 +249,18 @@ export async function POST(request: NextRequest) {
         feeData.gasPrice ??
         ethers.parseUnits(DEFAULT_GAS_PRICE_GWEI, "gwei");
 
+      if (isDryRun) {
+        return NextResponse.json({
+          success: true,
+          dryRun: true,
+          address,
+          amount: CLAIM_AMOUNT,
+          gasPrice: gasPrice.toString(),
+          balanceBefore: balanceData.balanceAvax,
+          senderTransferVerified: true,
+        });
+      }
+
       tx = await wallet.sendTransaction({
         to: address,
         value: amountWei,
@@ -257,6 +270,11 @@ export async function POST(request: NextRequest) {
       // トランザクションを待機
       receipt = await tx.wait();
     } catch (error) {
+      console.error("Failed to send transaction", {
+        message: error instanceof Error ? error.message : error,
+        gasPrice: gasPrice?.toString(),
+        dryRun: isDryRun,
+      });
       return NextResponse.json(
         {
           error: "Failed to send transaction",
