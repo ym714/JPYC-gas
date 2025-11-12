@@ -32,10 +32,12 @@ ALCHEMY_ENDPOINT=https://avax-mainnet.g.alchemy.com/v2/<YOUR_KEY>
 SECRET_KEY=<AVAX_送金元ウォレットの秘密鍵>
 ADDRESS=<SECRET_KEYに対応するアドレス>
 NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS=<Polygon広告コントラクト(任意)>
+NEXT_PUBLIC_POLYGON_FAUCET_URL=https://example.com/polygon-gas-helper
 ```
 
 - `SECRET_KEY` と `ADDRESS` は 0.001 AVAX を送るウォレットを指定
 - 広告機能を無効化する場合は `NEXT_PUBLIC_COMMERCIAL_CONTRACT_ADDRESS` を空にしておいても OK
+- `NEXT_PUBLIC_POLYGON_FAUCET_URL` は「Polygon版はこちら」リンクの遷移先（未設定時は `https://jpyc-volunteer.vercel.app`）
 
 ### 3. 開発サーバー
 

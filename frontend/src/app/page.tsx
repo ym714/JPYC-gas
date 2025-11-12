@@ -33,6 +33,8 @@ interface ClaimResult {
 
 export default function Home() {
   const { address, isConnected } = useAccount();
+  const polygonFaucetUrl =
+    process.env.NEXT_PUBLIC_POLYGON_FAUCET_URL || "https://jpyc-volunteer.vercel.app";
   
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
@@ -285,6 +287,17 @@ export default function Home() {
               JPYCがローンチされ、JPYC社からの振込履歴があるKYC済みアドレスには、
               JPYCしか受け取れずガス代が払えずロックされる問題があります。
               このサービスは、そんな方々に少しのガス代を送って、ロックを解消するためのものです。
+            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Polygon版はこちら：
+              <a
+                href={polygonFaucetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                {polygonFaucetUrl.replace(/^https?:\/\//, "")}
+              </a>
             </p>
           </div>
 
